@@ -63,6 +63,16 @@ python -m barcheck prices.csv && python run_backtest.py
 For an installed command, run `python -m pip install .`, then `barcheck prices.csv`.
 This project has not been published to PyPI.
 
+Pass `-` to read CSV from standard input, including output from another command:
+
+```bash
+cat examples/prices.csv | python -m barcheck - --json
+```
+
+Piped input uses the same checks, reports, and exit codes as a file. It is read
+once without a temporary file. Standard input uses Python's terminal encoding;
+set `PYTHONIOENCODING=utf-8` when piping UTF-8 data in another locale.
+
 ## Python API
 
 ```python
@@ -75,6 +85,9 @@ if not report.ok:
 ```
 
 The API raises file-access and decoding errors so callers can handle them.
+Use `check_stream(stream)` for an open text file or `io.StringIO`. It reads from
+the current position and leaves the stream open. Open text files with `newline=""`
+for CSV newline handling. Both APIs accept an optional leading UTF-8 BOM.
 
 ## Limits
 
