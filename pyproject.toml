@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "barcheck"
+version = "0.1.0"
+description = "Check daily price-data CSVs for bad rows before running a backtest."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+barcheck = "barcheck.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["barcheck*"]
