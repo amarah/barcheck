@@ -78,6 +78,22 @@ class Checks(unittest.TestCase):
         self.assertIn("duplicate_bar", self.codes(content + "A," + GOOD))
         self.assertIn("missing_symbol", self.codes("symbol," + HEADER + "," + GOOD))
 
+    def test_optional_calendar_gap_limit_is_per_symbol(self):
+        content = ("symbol," + HEADER + "A,2026-09-18,100,103,99,102,1200\n"
+                   "B,2026-09-20,100,103,99,102,1200\n"
+                   "A,2026-09-22,102,104,101,103,1500\n")
+        self.path.write_text(content, encoding="utf-8")
+        self.assertTrue(check_csv(self.path).ok)
+        report = check_csv(self.path, max_gap_days=3)
+        self.assertEqual([(issue.row, issue.code) for issue in report.issues], [(4, "date_gap")])
+        self.assertTrue(check_csv(self.path, max_gap_days=4).ok)
+
+    def test_gap_limit_validation(self):
+        self.path.write_text(HEADER + GOOD, encoding="utf-8")
+        for value in (0, -1, True, 1.5):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                check_csv(self.path, max_gap_days=value)
+
     def test_quoted_csv_and_extra_columns(self):
         content = HEADER.rstrip() + ",note\n" + GOOD.rstrip() + ',"a,b"\n'
         self.assertTrue(self.check(content).ok)

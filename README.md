@@ -19,6 +19,7 @@ or network calls. Input files stay on your machine and are never modified.
 - Missing, nonnumeric, infinite, or NaN prices and volume
 - Prices at or below zero and negative volume
 - High and low values that do not contain both open and close
+- Optionally, gaps longer than a chosen number of calendar days
 
 ## CSV format
 
@@ -59,6 +60,15 @@ python -m barcheck prices.csv && python run_backtest.py
 ```
 
 `run_backtest.py` represents your own backtest script.
+
+To flag unexpectedly long breaks within each symbol, set a calendar-day limit:
+
+```bash
+python -m barcheck prices.csv --max-gap-days 4
+```
+
+Gap checking is opt in because weekends, holidays, and trading schedules differ.
+It does not use an exchange calendar.
 
 For an installed command, run `python -m pip install .`, then `barcheck prices.csv`.
 This project has not been published to PyPI.
