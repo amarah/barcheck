@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import subprocess
 import sys
 import unittest
@@ -12,6 +13,21 @@ GOOD = '2026-09-21,100,103,99,102,1200\n'
 
 
 class StreamChecks(unittest.TestCase):
+    def test_cli_rejects_undecodable_bytes_in_extra_columns(self):
+        prefix = b'date,open,high,low,close,volume,note\n2026-09-21,100,103,99,102,1200,'
+        for note, expected in [(b'\xff', 2), ('café'.encode('utf-8'), 0)]:
+            with self.subTest(note=note):
+                result = subprocess.run(
+                    [sys.executable, '-m', 'barcheck', '-', '--json'],
+                    input=prefix + note + b'\n', capture_output=True, check=False,
+                    env={**os.environ, 'PYTHONIOENCODING': 'utf-8:surrogateescape'},
+                )
+                self.assertEqual(result.returncode, expected, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report['ok'], expected == 0)
+                if expected:
+                    self.assertIn('input line 2', report['error'])
+
     def test_reads_from_current_position_without_closing(self):
         stream = io.StringIO('skip this line\n' + HEADER + GOOD)
         stream.readline()

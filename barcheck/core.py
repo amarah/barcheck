@@ -52,9 +52,15 @@ def check_stream(stream: TextIO) -> Report:
     def add(row: int, code: str, message: str) -> None:
         report.issues.append(Issue(row, code, message))
 
-    lines = (line.removeprefix("\ufeff") if index == 0 else line
-             for index, line in enumerate(stream))
-    reader = csv.reader(lines, strict=True)
+    def lines():
+        for index, line in enumerate(stream):
+            # stdin may preserve undecodable bytes as surrogate characters.
+            # Check the entire line, including columns the validator ignores.
+            if re.search(r"[\ud800-\udfff]", line):
+                raise UnicodeError(f"Invalid text encoding on input line {index + 1}.")
+            yield line.removeprefix("\ufeff") if index == 0 else line
+
+    reader = csv.reader(lines(), strict=True)
     try:
         raw_header = next(reader, None)
         if raw_header is None:
