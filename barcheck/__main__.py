@@ -9,10 +9,13 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Check a daily OHLCV CSV before using it.")
     parser.add_argument("file", help="CSV file to check, or - for standard input")
     parser.add_argument("--json", action="store_true", help="Print a structured report")
+    parser.add_argument("--max-gap-days", type=int,
+                        help="Report gaps longer than this many calendar days within each symbol")
     args = parser.parse_args(argv)
     try:
-        report = check_stream(sys.stdin) if args.file == "-" else check_csv(args.file)
-    except (OSError, UnicodeError) as exc:
+        report = (check_stream(sys.stdin, max_gap_days=args.max_gap_days) if args.file == "-"
+                  else check_csv(args.file, max_gap_days=args.max_gap_days))
+    except (OSError, UnicodeError, ValueError) as exc:
         if args.json:
             print(json.dumps({"ok": False, "error": str(exc)}))
         else:
