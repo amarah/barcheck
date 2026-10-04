@@ -86,6 +86,9 @@ class Checks(unittest.TestCase):
         self.assertTrue(check_csv(self.path).ok)
         report = check_csv(self.path, max_gap_days=3)
         self.assertEqual([(issue.row, issue.code) for issue in report.issues], [(4, "date_gap")])
+        self.assertIn("2026-09-22 is 4 calendar days after 2026-09-18 for symbol A",
+                      report.issues[0].message)
+        self.assertIn("limit is 3", report.issues[0].message)
         self.assertTrue(check_csv(self.path, max_gap_days=4).ok)
 
     def test_gap_limit_validation(self):

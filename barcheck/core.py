@@ -102,9 +102,12 @@ def check_stream(stream: TextIO, *, max_gap_days: int | None = None) -> Report:
                     add(row_number, "out_of_order", "Dates must increase within each symbol.")
                 elif (max_gap_days is not None and symbol in latest
                       and (day - latest[symbol]).days > max_gap_days):
-                    gap = (day - latest[symbol]).days
+                    previous = latest[symbol]
+                    gap = (day - previous).days
+                    series = f" for symbol {symbol}" if symbol else ""
                     add(row_number, "date_gap",
-                        f"This bar is {gap} calendar days after the previous bar; limit is {max_gap_days}.")
+                        f"{day.isoformat()} is {gap} calendar days after "
+                        f"{previous.isoformat()}{series}; limit is {max_gap_days}.")
                 latest[symbol] = max(day, latest.get(symbol, day))
 
             numbers = {}
