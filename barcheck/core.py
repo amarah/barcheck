@@ -32,21 +32,23 @@ class Report:
                 "issues": [asdict(issue) for issue in self.issues]}
 
 
-def check_csv(path: str | Path) -> Report:
+def check_csv(path: str | Path, *, max_gap_days: int | None = None) -> Report:
     """Check one daily series or multiple series keyed by an optional symbol column.
 
     Row numbers are CSV record numbers including the header, not physical line
     numbers when quoted fields span lines. I/O and decoding errors are raised.
     """
     with open(path, encoding="utf-8-sig", newline="") as stream:
-        return check_stream(stream)
+        return check_stream(stream, max_gap_days=max_gap_days)
 
 
-def check_stream(stream: TextIO) -> Report:
+def check_stream(stream: TextIO, *, max_gap_days: int | None = None) -> Report:
     """Check CSV text from the stream's current position without closing it.
 
     Open file streams with newline="" to preserve CSV newline handling.
     """
+    if max_gap_days is not None and (type(max_gap_days) is not int or max_gap_days < 1):
+        raise ValueError("max_gap_days must be None or an integer of at least 1.")
     report = Report()
 
     def add(row: int, code: str, message: str) -> None:
@@ -98,6 +100,14 @@ def check_stream(stream: TextIO) -> Report:
                 seen.add(key)
                 if symbol in latest and day < latest[symbol]:
                     add(row_number, "out_of_order", "Dates must increase within each symbol.")
+                elif (max_gap_days is not None and symbol in latest
+                      and (day - latest[symbol]).days > max_gap_days):
+                    previous = latest[symbol]
+                    gap = (day - previous).days
+                    series = f" for symbol {symbol}" if symbol else ""
+                    add(row_number, "date_gap",
+                        f"{day.isoformat()} is {gap} calendar days after "
+                        f"{previous.isoformat()}{series}; limit is {max_gap_days}.")
                 latest[symbol] = max(day, latest.get(symbol, day))
 
             numbers = {}
